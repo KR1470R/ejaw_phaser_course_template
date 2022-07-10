@@ -1,5 +1,5 @@
 export const image = {
-    ui: ["background-tile", "warning"],
+    ui: ["background-tile", "emptytitle"],
 };
 
 export const audio = {
