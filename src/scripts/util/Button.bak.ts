@@ -8,7 +8,7 @@ export default class Button {
     public width: number;
     public height: number;
     public round: number;
-    public element: Phaser.GameObjects.Rectangle;
+    public element: Phaser.GameObjects.Container;
 
     private events: Map<string, Function>;
     private enabled: boolean;
@@ -42,7 +42,7 @@ export default class Button {
         this.events.set("over", function () {});
         this.events.set("out", function () {});
 
-        this.element.setInteractive();
+        this.element.setInteractive(true);
         this.element.on("pointerdown", this.on_click_template.bind(this));
         this.element.on("pointerover", this.on_over_template.bind(this));
         this.element.on("pointerout", this.on_out_template.bind(this));
@@ -110,7 +110,7 @@ export default class Button {
         this.events.get("out")!(this, this.element);
     }
 
-    private createElement(): Phaser.GameObjects.Rectangle {
+    private createElement(): Phaser.GameObjects.Container {
 
         const button_container = this.scene.add.container(
             this.x,
@@ -128,34 +128,33 @@ export default class Button {
             }
         ).setOrigin(0.5);
 
-        const button_graphics = this.scene.add.graphics()
-            .fillStyle(0x8f7a66, 1)
-            .fillRoundedRect(
-                -50, 
-                -50, 
+        // const button_graphics = this.scene.add.graphics()
+        //     .fillStyle(0x8f7a66, 1)
+        //     .fillRoundedRect(
+        //         -50, 
+        //         -50, 
+        //         button_text.width + 50, 
+        //         button_text.height + 50, 
+        //         this.round
+        //     );
+
+        const button_background = this.scene.add
+            .rectangle(
+                0,
+                0,
                 button_text.width + 50, 
                 button_text.height + 50, 
-                this.round
-            );
+                0x8f7a66, 
+                1
+            )
 
         button_container.add([
-            button_graphics,
+            button_background,
             button_text
         ]);
 
         this.scene.add.existing(button_container);
 
-        const inputContainer = this.scene.add
-            .rectangle(
-                this.x + 20, 
-                this.y - 15, 
-                this.width + 5, 
-                this.height + 10, 
-                0x000000, 
-                0
-            )
-            .setOrigin(0.5)
-
-        return inputContainer;
+        return button_container;
     }
 }

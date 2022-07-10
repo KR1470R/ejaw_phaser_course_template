@@ -14,3 +14,13 @@ export const soundManager = new Sound();
 export const dataStorage = {
     bitmaps: {},
 };
+
+export let score = 0;
+export let best_score = 0;
+
+export const base_text_style = {
+    fontFamily:"Uni_Sans_Heavy",
+    color: "black",
+};
+
+export const grid_size = 4;

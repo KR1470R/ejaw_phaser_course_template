@@ -2,7 +2,7 @@ import {
     CENTER_X,
     CENTER_Y,
     dataStorage,
-    soundManager,
+    soundManager
 } from "../../util/globals";
 import * as configs from "./Boot/config";
 
@@ -59,56 +59,27 @@ export default class Boot extends Phaser.Scene {
                 this.load[type](`${key}-${frame}`, `${path}.png`);
             }
 
-            if (type === "spine") {
-                this.load[type](
-                    `${key}-${frame}`,
-                    `${path}.json`,
-                    [`${path}.atlas`],
-                    false
-                );
-            }
-
-            if (type === "aseprite") {
-                this.load[type](
-                    `${key}-${frame}`,
-                    `${path}.png`,
-                    `${path}.json`
-                );
-            }
-
             if (type === "audio") {
                 this.load[type](`${key}-${frame}`, [path]);
             }
 
-            if (type === "multiatlas") {
-                this.load[type](`${key}-${frame}`, `${path}.json`, folder);
-            }
         });
     }
 
     public create() {
         this.initFonts();
         soundManager.init(this.sound);
-        this.initAsepriteAnimations();
 
         this.time.delayedCall(50, () => {
-            this.scene.start("Example");
+            this.scene.start("Game");
         });
-    }
-
-    private initAsepriteAnimations() {
-        for (let key in configs.aseprite) {
-            configs.aseprite[key].forEach((frame) => {
-                this.anims.createFromAseprite(`${key}-${frame}`);
-            });
-        }
     }
 
     private initFonts() {
         const cachePlugin = this.plugins.get("rexcharactercacheplugin") as any;
 
-        dataStorage.bitmaps["Uni_Sans_Heavy_24_green"] = cachePlugin.add(this, {
-            key: "Uni_Sans_Heavy_24_green",
+        dataStorage.bitmaps["Uni_Sans_Heavy"] = cachePlugin.add(this, {
+            key: "Uni_Sans_Heavy",
 
             cellWidth: 32,
             cellHeight: 32,
@@ -133,7 +104,7 @@ export default class Boot extends Phaser.Scene {
     }
 
     private createLoaderBar() {
-        const [x, y] = [CENTER_X, CENTER_Y - 150];
+        const [x, y] = [CENTER_X, CENTER_Y];
 
         this.add.sprite(x, y, "loading-fill-bk");
         const filler = this.add.sprite(x, y, "loading-fill");
