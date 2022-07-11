@@ -55,13 +55,27 @@ export default class Boot extends Phaser.Scene {
             const folder = `assets/${type}/${key}`;
             const path = `${folder}/${frame}`;
 
+            console.log(path)
+
             if (type === "image") {
-                console.log(key, frame)
                 this.load[type](`${key}-${frame}`, `${path}.png`);
             }
 
             if (type === "audio") {
                 this.load[type](`${key}-${frame}`, [path]);
+            }
+
+            if (type === "spritesheet") {
+                console.log(path)
+                this.load[type](
+                    "sprite-tile", 
+                    `${path}.png`, 
+                    { 
+                        frameWidth: 200, 
+                        frameHeight: 200, 
+                        // endFrame: 23 
+                    }
+                );
             }
 
         });

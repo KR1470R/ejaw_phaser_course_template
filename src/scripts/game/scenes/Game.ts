@@ -72,6 +72,12 @@ export default class Game extends Phaser.Scene {
             console.log("Game restored.")
         });
 
+        this.add.sprite(
+            100,
+            200,
+            "sprite-tile"
+        ).setScale(0.6)
+
         this.keyUp.on("down", () => console.log("UP"));
         this.keyDown.on("down", () => console.log("DOWN"));
         this.keyLeft.on("down", () => console.log("LEFT"));
