@@ -56,6 +56,7 @@ export default class Boot extends Phaser.Scene {
             const path = `${folder}/${frame}`;
 
             if (type === "image") {
+                console.log(key, frame)
                 this.load[type](`${key}-${frame}`, `${path}.png`);
             }
 

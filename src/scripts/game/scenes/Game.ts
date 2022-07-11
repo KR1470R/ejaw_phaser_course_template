@@ -5,10 +5,16 @@ import {
 } from "scripts/util/globals";
 import GameFieldContainer from "./Game/GameFIeldContainer";
 import GameStatisticContainer from "./Game/GameStatisticContainer";
+import TilesManager from "./Logic/TilesManager";
 
 export default class Game extends Phaser.Scene {
     private statisticContainer!: GameStatisticContainer;
     private gameFieldContainer!: GameFieldContainer;
+    private tilesManager!: TilesManager;
+    private keyUp!: Phaser.Input.Keyboard.Key; 
+    private keyDown!: Phaser.Input.Keyboard.Key;
+    private keyLeft!: Phaser.Input.Keyboard.Key;
+    private keyRight!: Phaser.Input.Keyboard.Key;
 
     constructor() {
         super({ key: "Game" });
@@ -17,12 +23,19 @@ export default class Game extends Phaser.Scene {
     public init() {
         this.statisticContainer = new GameStatisticContainer(this);
         this.gameFieldContainer = new GameFieldContainer(this);
+        this.tilesManager = new TilesManager(this);
+        this.keyUp = this.scene.scene.input.keyboard.addKey("UP");        
+        this.keyDown = this.scene.scene.input.keyboard.addKey("DOWN");
+        this.keyLeft = this.scene.scene.input.keyboard.addKey("LEFT");
+        this.keyRight = this.scene.scene.input.keyboard.addKey("RIGHT");
     }
 
     public create() {
         this.create_game_titles();
         this.statisticContainer.create();
         this.gameFieldContainer.create();
+
+        this.tilesManager.generateGrid(this.gameFieldContainer.container);
 
         // // Create atlas image
         // this.add.image(CENTER_X, 200, `game-atlas`, `font-9.png`);
@@ -58,6 +71,11 @@ export default class Game extends Phaser.Scene {
         ).click(() => {
             console.log("Game restored.")
         });
+
+        this.keyUp.on("down", () => console.log("UP"));
+        this.keyDown.on("down", () => console.log("DOWN"));
+        this.keyLeft.on("down", () => console.log("LEFT"));
+        this.keyRight.on("down", () => console.log("RIGHT"))
 
         this.create_fps();
     }

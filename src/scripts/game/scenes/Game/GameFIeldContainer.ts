@@ -21,6 +21,11 @@ export default class GameFieldContainer extends Phaser.GameObjects.Container {
 
     public create() {
         this.createGameFieldBackgroundContainer();
+        return this.backgroundContainer;
+    }
+
+    public get container() {
+        return this.backgroundContainer;
     }
 
     public createGameFieldBackgroundContainer() {
