@@ -35,30 +35,7 @@ export default class Game extends Phaser.Scene {
         this.statisticContainer.create();
         this.gameFieldContainer.create();
 
-        this.tilesManager.generateGrid(this.gameFieldContainer.container);
-
-        // // Create atlas image
-        // this.add.image(CENTER_X, 200, `game-atlas`, `font-9.png`);
-
-        // // Create aseprite animation
-        // this.add
-        //     .sprite(CENTER_X, CENTER_Y - 220, "game-poof")
-        //     .play({ key: "poof", repeat: -1 });
-
-        // // Create spine animation
-        // this.add.spine(CENTER_X, CENTER_Y, "game-coin").play("animation", true);
-
-        // new Button(
-        //     this.add.image(CENTER_X, CENTER_Y + 290, "ui-warning")
-        // ).click((btn: Button, elm: Phaser.GameObjects.Image) => {
-        //     if (elm.getData("tint")) {
-        //         elm.clearTint();
-        //         elm.setData("tint", 0);
-        //     } else {
-        //         elm.setTint(0xff00ff);
-        //         elm.setData("tint", 1);
-        //     }
-        // });
+        this.tilesManager.generateBaseGrid(this.gameFieldContainer.container);
 
         new Button(
             this,
@@ -71,12 +48,6 @@ export default class Game extends Phaser.Scene {
         ).click(() => {
             console.log("Game restored.")
         });
-
-        this.add.sprite(
-            100,
-            200,
-            "sprite-tile"
-        ).setScale(0.6)
 
         this.keyUp.on("down", () => console.log("UP"));
         this.keyDown.on("down", () => console.log("DOWN"));

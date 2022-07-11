@@ -85,3 +85,18 @@ export const resize = (
         callback && callback({ offsetY, zoom, currentWidth, currentMinWidth });
     })();
 };
+
+export const BetweenUnique = (min: number, max: number, not?: number) => {
+    let res = Phaser.Math.Between(min, max);
+    if (res === not) return BetweenUnique(min, max, not);
+    else return res;
+}
+
+export function shuffleArray(array: any) {
+    if (array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+}
