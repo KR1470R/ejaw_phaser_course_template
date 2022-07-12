@@ -49,10 +49,10 @@ export default class Game extends Phaser.Scene {
             console.log("Game restored.")
         });
 
-        this.keyUp.on("down", () => console.log("UP"));
-        this.keyDown.on("down", () => console.log("DOWN"));
-        this.keyLeft.on("down", () => console.log("LEFT"));
-        this.keyRight.on("down", () => console.log("RIGHT"))
+        this.keyUp.on("down", async () => await this.tilesManager.moveUp());
+        this.keyDown.on("down", async () => await this.tilesManager.moveDown());
+        this.keyLeft.on("down", async () => await this.tilesManager.moveLeft());
+        this.keyRight.on("down", async () => await this.tilesManager.moveRight());
 
         this.create_fps();
     }
