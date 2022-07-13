@@ -1,36 +1,21 @@
+import {
+    Direction, grid_size,
+    Tile, TilePositionMap
+} from "scripts/util/globals";
+import { removeItemAll, shuffleArray } from "../../../util/extra";
+import TileConstructor from "./TileConstructor";
 
-import { grid_size } from "scripts/util/globals";
-import { BetweenUnique, removeItemAll, shuffleArray } from "../../../util/extra";
-
-type TilePosition = {
-    x: number;
-    y: number;
-}
-
-type TilePositionMap = {
-    row: number;
-    column: number;
-}
-
-type Tile = {
-    id: number;
-    pos: TilePosition;
-    posMap: TilePositionMap;
-    key: number; // 0 - empty tile, 4, 8, 16...
-    gameObject: Phaser.GameObjects.GameObject,
-}
-
-type Direction = "right" | "left" | "up" | "down";
-
-export default class TilesManager extends Phaser.GameObjects.Group{
+export default class TilesManager extends Phaser.GameObjects.Group {
     public scene!: Phaser.Scene;
     private tiles_grid: Map<number, Tile[]> = new Map();
     private gridContainer?: Phaser.GameObjects.Container;
+    private tileConstructor!: TileConstructor;
     public inMove: boolean = false;
 
-    constructor(scene: Phaser.Scene, ) {
+    constructor(scene: Phaser.Scene) {
         super(scene);
         this.scene = scene;
+        this.tileConstructor = new TileConstructor(this.scene, this.tiles_grid);
     }
 
     public generateBaseGrid(gridContainer: Phaser.GameObjects.Container) {
@@ -38,78 +23,32 @@ export default class TilesManager extends Phaser.GameObjects.Group{
         for (let row = 1; row <= grid_size; row++) {
             const column_tiles: Tile[] = [];
             for (let column = 1; column <= grid_size; column++) {
-                const tile = this.createEmptyTile(
-                    -380 + (column * 150),
-                    -370 + (row * 150)
+                const tile = this.tileConstructor.createEmpty(
+                    {
+                        x: -380 + (column * 150),
+                        y: -370 + (row * 150)
+                    },
+                    {
+                        row,
+                        column
+                    }
                 );
-                column_tiles.push({
-                    id: row,
-                    pos: {
-                        x: tile.x,
-                        y: tile.y
-                    },
-                    posMap: {
-                        column,
-                        row
-                    },
-                    key: -1,
-                    gameObject: tile
-                })
-                this.gridContainer.add(tile);
+
+                column_tiles.push(tile)
+                this.gridContainer.add(tile.gameObject);
             }
-            console.log(`row ${row}:`, column_tiles)
+
             this.tiles_grid.set(row, column_tiles);
         }
 
         for (let i = 1; i <= 6; i++) {
-            const newTile = this.createTileRandom();
+            const newTile = this.tileConstructor.create(this.getFreeRandomSpaceMap())?.gameObject;
             if (newTile) {
                 gridContainer.add(newTile);
             } else {
                 console.log("COULDN'T FIND NEW SPACE TILE!");
             }
         } 
-
-        console.log(this.tiles_grid)
-    }
-
-    private createEmptyTile(x: number, y: number) {
-        return this.scene.add.image(
-                x,
-                y,
-                "ui-emptytile"
-            )
-            .setScale(0.6)
-            .setOrigin(0.5);
-    }
-
-    private createTileRandom() {
-        const freePosMap = this.getFreeRandomSpaceMap();
-        if (!freePosMap) return;
-        const freeTileColumn = (this.tiles_grid.get(freePosMap.row) as Tile[]);
-        const freeTile = freeTileColumn
-            .filter(tile => tile.posMap.column === freePosMap.column)[0];
-        const key = BetweenUnique(0, 1);
-        const sprite = this.scene.add.sprite(
-            freeTile.pos.x,
-            freeTile.pos.y,
-            "sprite-tile",
-            key
-        )
-            .setScale(0.6)
-            .setOrigin(0.5);
-
-        // console.log(columnID);
-        // console.log(freeTileColumn);
-        // console.log(freePosMap);
-        // console.log(freeTile);
-
-        freeTile.key = key;
-        freeTile.gameObject = sprite;
-        freeTileColumn[freeTileColumn.indexOf(freeTile)] = freeTile;
-        this.tiles_grid.set(freePosMap.row, freeTileColumn);
-
-        return sprite;
     }
 
     private getFreeRandomSpaceMap(): TilePositionMap | undefined {
@@ -129,7 +68,6 @@ export default class TilesManager extends Phaser.GameObjects.Group{
 
                     const isFreeTile = (column as Tile[]).filter(tile => tile.key === -1)[0];
                     if (isFreeTile) {
-                        console.log("free space:", isFreeTile.posMap);
                         return isFreeTile.posMap;
                     } else {
                         rows = removeItemAll(rows, row);
@@ -140,11 +78,6 @@ export default class TilesManager extends Phaser.GameObjects.Group{
         }
 
         return iterateEachRow();
-    }
-
-    private isTileNotEmpty(tile: Tile) {
-        if (tile.key >= 0) return true;
-        else return false;
     }
 
     public async moveRight() {
@@ -163,24 +96,12 @@ export default class TilesManager extends Phaser.GameObjects.Group{
         await this.moveToSpecificTileStep("down");
     }
 
-    private getBusyTile(): Tile | undefined {
-        let busyTile: Tile | undefined;
-        this.tiles_grid.forEach((tiles => {
-            for (const tile of tiles) {
-                if (this.isTileNotEmpty(tile)) 
-                    busyTile = tile;
-            }
-        }));
-
-        return busyTile;
-    }
-
     private getAllBusyTiles(): Tile[] | [] {
         const busyTiles: Tile[] | [] = [];
 
         this.tiles_grid.forEach((tiles => {
             for (const tile of tiles) {
-                if (this.isTileNotEmpty(tile)) 
+                if (this.tileConstructor.isTileNotEmpty(tile)) 
                     busyTiles.push(tile as never);
             }
         }));
@@ -208,8 +129,6 @@ export default class TilesManager extends Phaser.GameObjects.Group{
                         resolve(0);
                         continue;
                     }
-                    console.log("CURRENT TILE:", tile);
-                    console.log("CURRENT NEIGHBOR:", neighborTile);
     
                     const scene = this.scene;
                     if (tile.posMap.row === neighborTile.posMap.row) {
@@ -219,7 +138,6 @@ export default class TilesManager extends Phaser.GameObjects.Group{
                             duration: 200,
                             ease: Phaser.Math.Easing.Expo.InOut,
                             onUpdate: (tween: any, target: any) => {
-                                console.log(target.value)
                                 this.inMove = true;
                                 scene.add.tween({
                                     targets: tile.gameObject,
@@ -231,7 +149,6 @@ export default class TilesManager extends Phaser.GameObjects.Group{
                             onComplete: () => {
                                 this.inMove = false;
                                 this.swapTiles(tile, neighborTile, direction);
-                                console.log("MOVED FROM", tile.posMap, "TO", neighborTile.posMap);
                                 resolve(1);
                             }
                         });   
@@ -253,7 +170,6 @@ export default class TilesManager extends Phaser.GameObjects.Group{
                             onComplete: () => {
                                 this.inMove = false;
                                 this.swapTiles(tile, neighborTile, direction);
-                                console.log("MOVED FROM", tile.posMap, "TO", neighborTile.posMap);
                                 resolve(1);
                             }
                         });  
@@ -265,7 +181,7 @@ export default class TilesManager extends Phaser.GameObjects.Group{
 
     private defineNextPosTile(tile: Tile, direction: Direction): Tile | undefined {
         const tileNeighbor = this.getNeighbor(tile, direction);
-        console.log("tileNeighbor:", tileNeighbor);
+
         if (!tileNeighbor) return;
 
         return tileNeighbor;
@@ -307,8 +223,6 @@ export default class TilesManager extends Phaser.GameObjects.Group{
     private getNeighbor(tile: Tile, direction: Direction) {
         let neighborPos = this.defineNeighborPos(tile.posMap, direction);
 
-        console.log("BEFORE", neighborPos, direction);
-
         if (
             neighborPos.column > grid_size || 
             neighborPos.column <= 0
@@ -317,18 +231,15 @@ export default class TilesManager extends Phaser.GameObjects.Group{
             neighborPos.row > grid_size || 
             neighborPos.row <= 0
         ) return;
-        // console.log("before", neighborPos)
+
         const tileNeighbor = (this.tiles_grid.get(neighborPos.row) as Tile[])
             .filter(tile => {
-                if (tile.posMap.column === neighborPos.column){
-                    console.log("THIS COLUMN", tile.posMap.column, "ON ROW:", neighborPos.row)
-                    return true;
-                } else return false
+                if (tile.posMap.column === neighborPos.column) return true;
+                else return false;
             })[0];
-        console.log("after", tileNeighbor)
+
         if (!tileNeighbor || tileNeighbor.key !== -1) return;
         
-        // console.log("neighbor:", tileNeighbor);
         return tileNeighbor;
     }
 
@@ -372,8 +283,6 @@ export default class TilesManager extends Phaser.GameObjects.Group{
             default:
                 throw new Error("Uknown orientation!");
         }
-
-        console.log("CURRENT MAP AFTER SWAP:", this.tiles_grid)
     }
 
     private defineOrientation(direction: Direction) {

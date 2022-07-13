@@ -39,3 +39,23 @@ export const tileKeys: object = {
     10: 2048,
     11: 4096
 }
+
+export type TilePosition = {
+    x: number;
+    y: number;
+}
+
+export type TilePositionMap = {
+    row: number;
+    column: number;
+}
+
+export type Tile = {
+    id: number;
+    pos: TilePosition;
+    posMap: TilePositionMap;
+    key: number; // 0 - empty tile, 4, 8, 16...
+    gameObject: Phaser.GameObjects.GameObject,
+}
+
+export type Direction = "right" | "left" | "up" | "down";
