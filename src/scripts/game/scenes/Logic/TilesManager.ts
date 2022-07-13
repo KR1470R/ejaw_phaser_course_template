@@ -61,7 +61,7 @@ export default class TilesManager extends Phaser.GameObjects.Group{
             this.tiles_grid.set(row, column_tiles);
         }
 
-        for (let i = 1; i <= 1; i++) {
+        for (let i = 1; i <= 6; i++) {
             const newTile = this.createTileRandom();
             if (newTile) {
                 gridContainer.add(newTile);
@@ -175,74 +175,89 @@ export default class TilesManager extends Phaser.GameObjects.Group{
         return busyTile;
     }
 
+    private getAllBusyTiles(): Tile[] | [] {
+        const busyTiles: Tile[] | [] = [];
+
+        this.tiles_grid.forEach((tiles => {
+            for (const tile of tiles) {
+                if (this.isTileNotEmpty(tile)) 
+                    busyTiles.push(tile as never);
+            }
+        }));
+
+        return busyTiles;
+    }
+
     private moveToSpecificTileStep(
         direction: Direction,
         tileStep = 1
     ) {
         if (this.inMove) return;
         return new Promise(resolve => {
-            const tile = this.getBusyTile();
+            const tiles = this.getAllBusyTiles();
             
-            if (!tile) {
+            if (!tiles.length) {
                 resolve(0);
                 return;
             }
 
             for (let step = 1; step <= tileStep; step++) {
-                const neighborTile = this.defineNextPosTile(tile, direction);
-                if (!neighborTile) {
-                    resolve(0);
-                    return;
-                }
-                console.log("CURRENT TILE:", tile);
-                console.log("CURRENT NEIGHBOR:", neighborTile);
-
-                const scene = this.scene;
-                if (tile.posMap.row === neighborTile.posMap.row) {
-                    this.scene.tweens.addCounter({
-                        from: tile.pos.x,
-                        to: neighborTile.pos.x,
-                        duration: 200,
-                        ease: Phaser.Math.Easing.Expo.InOut,
-                        onUpdate: (tween: any, target: any) => {
-                            console.log(target.value)
-                            this.inMove = true;
-                            scene.add.tween({
-                                targets: tile.gameObject,
-                                x: target.value,
-                                duration: 1,
-                                ease: Phaser.Math.Easing.Linear
-                            })
-                        },
-                        onComplete: () => {
-                            this.inMove = false;
-                            this.swapTiles(tile, neighborTile, direction);
-                            console.log("MOVED FROM", tile.posMap, "TO", neighborTile.posMap);
-                            resolve(1);
-                        }
-                    });   
-                } else {
-                    this.scene.tweens.addCounter({
-                        from: tile.pos.y,
-                        to: neighborTile.pos.y,
-                        duration: 200,
-                        ease: Phaser.Math.Easing.Expo.InOut,
-                        onUpdate: (tween: any, target: any) => {
-                            this.inMove = true;
-                            scene.add.tween({
-                                targets: tile.gameObject,
-                                y: target.value,
-                                duration: 1,
-                                ease: Phaser.Math.Easing.Linear
-                            })
-                        },
-                        onComplete: () => {
-                            this.inMove = false;
-                            this.swapTiles(tile, neighborTile, direction);
-                            console.log("MOVED FROM", tile.posMap, "TO", neighborTile.posMap);
-                            resolve(1);
-                        }
-                    });  
+                for (const tile of tiles) {
+                    const neighborTile = this.defineNextPosTile(tile, direction);
+                    if (!neighborTile) {
+                        resolve(0);
+                        continue;
+                    }
+                    console.log("CURRENT TILE:", tile);
+                    console.log("CURRENT NEIGHBOR:", neighborTile);
+    
+                    const scene = this.scene;
+                    if (tile.posMap.row === neighborTile.posMap.row) {
+                        this.scene.tweens.addCounter({
+                            from: tile.pos.x,
+                            to: neighborTile.pos.x,
+                            duration: 200,
+                            ease: Phaser.Math.Easing.Expo.InOut,
+                            onUpdate: (tween: any, target: any) => {
+                                console.log(target.value)
+                                this.inMove = true;
+                                scene.add.tween({
+                                    targets: tile.gameObject,
+                                    x: target.value,
+                                    duration: 1,
+                                    ease: Phaser.Math.Easing.Linear
+                                })
+                            },
+                            onComplete: () => {
+                                this.inMove = false;
+                                this.swapTiles(tile, neighborTile, direction);
+                                console.log("MOVED FROM", tile.posMap, "TO", neighborTile.posMap);
+                                resolve(1);
+                            }
+                        });   
+                    } else {
+                        this.scene.tweens.addCounter({
+                            from: tile.pos.y,
+                            to: neighborTile.pos.y,
+                            duration: 200,
+                            ease: Phaser.Math.Easing.Expo.InOut,
+                            onUpdate: (tween: any, target: any) => {
+                                this.inMove = true;
+                                scene.add.tween({
+                                    targets: tile.gameObject,
+                                    y: target.value,
+                                    duration: 1,
+                                    ease: Phaser.Math.Easing.Linear
+                                })
+                            },
+                            onComplete: () => {
+                                this.inMove = false;
+                                this.swapTiles(tile, neighborTile, direction);
+                                console.log("MOVED FROM", tile.posMap, "TO", neighborTile.posMap);
+                                resolve(1);
+                            }
+                        });  
+                    }
                 }
             }
         })
