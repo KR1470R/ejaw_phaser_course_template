@@ -1,6 +1,6 @@
 
 import { grid_size } from "scripts/util/globals";
-import { BetweenUnique, shuffleArray } from "../../../util/extra";
+import { BetweenUnique, shuffleArray, removeItemAll } from "../../../util/extra";
 
 type TilePosition = {
     x: number;
@@ -60,8 +60,14 @@ export default class TilesManager extends Phaser.GameObjects.Group{
             this.tiles_map.set(row, column_tiles);
         }
 
-        gridContainer.add(this.createTileRandom());
-        gridContainer.add(this.createTileRandom());
+        for (let i = 1; i <= 2; i++) {
+            const newTile = this.createTileRandom();
+            if (newTile) {
+                gridContainer.add(newTile);
+            } else {
+                console.log("COULDN'T FIND NEW SPACE TILE!");
+            }
+        } 
 
         console.log(this.tiles_map)
     }
@@ -78,9 +84,10 @@ export default class TilesManager extends Phaser.GameObjects.Group{
 
     private createTileRandom() {
         const freePosMap = this.getFreeRandomSpaceMap();
+        if (!freePosMap) return;
         const freeTileColumn = (this.tiles_map.get(freePosMap.row) as Tile[]);
-        const columnID = freePosMap.column - 1;
-        const freeTile = freeTileColumn[columnID];
+        const freeTile = freeTileColumn
+            .filter(tile => tile.posMap.column === freePosMap.column)[0];
         const key = BetweenUnique(0, 1);
         const sprite = this.scene.add.sprite(
             freeTile.pos.x,
@@ -98,30 +105,40 @@ export default class TilesManager extends Phaser.GameObjects.Group{
 
         freeTile.key = key;
         freeTile.gameObject = sprite;
-        freeTileColumn[columnID] = freeTile;
+        freeTileColumn[freeTileColumn.indexOf(freeTile)] = freeTile;
         this.tiles_map.set(freePosMap.row, freeTileColumn);
 
         return sprite;
     }
 
-    private getFreeRandomSpaceMap() {
+    private getFreeRandomSpaceMap(): TilePositionMap | undefined {
         let rows: number[] = [];
         for (let i = 1; i <= grid_size; i++) {
             rows.push(i);
         }
 
         shuffleArray(rows);
-        
-        let res;
-        for (let row = 0; row <= rows.length; row++) {
-            let column = this.tiles_map.get(rows[row]);
-            if (column) {
-                shuffleArray(column);
-                res = (column as Tile[]).filter(tile => tile.key === -1)[0].posMap;
+
+        const iterateEachRow = () => {
+            if (!rows.length) return 
+            for (const row of rows) {
+                let column = this.tiles_map.get(row);
+                if (column) {
+                    shuffleArray(column);
+
+                    const isFreeTile = (column as Tile[]).filter(tile => tile.key === -1)[0];
+                    if (isFreeTile) {
+                        console.log("free space:", isFreeTile.posMap);
+                        return isFreeTile.posMap;
+                    } else {
+                        rows = removeItemAll(rows, row);
+                        return iterateEachRow();
+                    }
+                } else return;
             }
         }
-        console.log("freespace", res)
-        return res;
+
+        return iterateEachRow();
     }
 
     private isTileNotEmpty(tile: Tile) {
@@ -163,7 +180,7 @@ export default class TilesManager extends Phaser.GameObjects.Group{
         this.tiles_map.forEach((tiles => {
             tiles.forEach(async tile => {
                 if (this.isTileNotEmpty(tile)) {
-                    await this.moveToSpecificTileStep(tile, "up");
+                    await this.moveToSpecificTileStep(tile, "down");
                 }
             })
         }))
@@ -175,19 +192,22 @@ export default class TilesManager extends Phaser.GameObjects.Group{
         tileStep = 1
     ) {
         return new Promise(resolve => {
-            for (let step = 0; step <= tileStep; step++) {
+            console.log('MOVE TILE:', tile.posMap);
+            for (let step = 1; step <= tileStep; step++) {
                 const neighborTile = this.defineNextPosTile(tile, direction);
-                if (!neighborTile) return resolve(0);
-                this.swapTiles(tile, neighborTile);
-                console.log(this.tiles_map);
-    
+                if (!neighborTile) {
+                    resolve(0);
+                    return;
+                }
+
                 this.scene.add.tween({
                     targets: tile.gameObject,
                     x: neighborTile.pos.x,
                     y: neighborTile.pos.y,
                     duration: 200,
+                    ease: Phaser.Math.Easing.Elastic.InOut,
                     onComplete: () => {
-                        console.log("'ve moved");
+                        this.swapTiles(tile, neighborTile);
                         resolve(1);
                     }
                 });
@@ -195,10 +215,10 @@ export default class TilesManager extends Phaser.GameObjects.Group{
         })
     }
 
-    private defineNextPosTile(tile: Tile, direction: Direction): Tile | null {
+    private defineNextPosTile(tile: Tile, direction: Direction): Tile | undefined {
         const tileNeighbor = this.getNeighbor(tile, direction);
-
-        if (!tileNeighbor) return null;
+        console.log("tileNeighbor:", tileNeighbor);
+        if (!tileNeighbor) return;
 
         return tileNeighbor;
     }
@@ -240,16 +260,16 @@ export default class TilesManager extends Phaser.GameObjects.Group{
         if (
             neighborPos.column > grid_size || 
             neighborPos.column < 0
-        ) return null;
+        ) return;
         if (
             neighborPos.row > grid_size || 
             neighborPos.column < 0
-        ) return null;
+        ) return;
         // console.log("before", neighborPos)
         const tileNeighbor = (this.tiles_map.get(neighborPos.row) as Tile[])
             .filter(tile => tile.posMap.column === neighborPos.column)[0];
         // console.log("after", tileNeighbor)
-        if (tileNeighbor.key !== -1) return null;
+        if (!tileNeighbor || tileNeighbor.key !== -1) return;
         
         // console.log("neighbor:", tileNeighbor);
         return tileNeighbor;
@@ -271,12 +291,10 @@ export default class TilesManager extends Phaser.GameObjects.Group{
             key: tile_new.key,
             gameObject: tile_new.gameObject
         }
-        // console.log("swapTiles before:", column);
 
         column[column.indexOf(tile_old)] = tile_old_temp;
         column[column.indexOf(tile_new)] = tile_new_temp;
 
-        // console.log("swapTiles after:", column);
         this.tiles_map.set(tile_old.posMap.row, column);
     }
 

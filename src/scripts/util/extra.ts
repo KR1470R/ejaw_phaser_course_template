@@ -92,11 +92,31 @@ export const BetweenUnique = (min: number, max: number, not?: number) => {
     else return res;
 }
 
-export function shuffleArray(array: any) {
+export const shuffleArray = (array: any) => {
     if (array) {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [array[i], array[j]] = [array[j], array[i]];
         }
     }
+}
+
+export const removeItemOnce = (arr: any[], value: any) => {
+    let index = arr.indexOf(value);
+    if (index > -1) {
+      arr.splice(index, 1);
+    }
+    return arr;
+}
+  
+export const removeItemAll = (arr: any[], value: any) => {
+    let i = 0;
+    while (i < arr.length) {
+        if (arr[i] === value) {
+            arr.splice(i, 1);
+        } else {
+            ++i;
+        }
+    }
+    return arr;
 }
