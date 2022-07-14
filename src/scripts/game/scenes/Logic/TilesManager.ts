@@ -87,49 +87,45 @@ export default class TilesManager extends Phaser.GameObjects.Group {
 
                 const freeNeighbor = freeNeighbors[freeNeighbors.length - 1];
                 const scene = this.scene;
+                let result_coord: {
+                    from: number;
+                    to: number;
+                    callbackTrajectory: (value: number) => { value: number };
+                };
                 if (tile.posMap.row === freeNeighbor.posMap.row) {
-                    this.scene.tweens.addCounter({
+                    result_coord = {
                         from: tile.pos.x,
                         to: freeNeighbor.pos.x,
-                        duration: 200,
-                        ease: Phaser.Math.Easing.Expo.InOut,
-                        onUpdate: (tween: any, target: any) => {
-                            this.inMove = true;
-                            scene.add.tween({
-                                targets: tile.gameObject,
-                                x: target.value,
-                                duration: 1,
-                                ease: Phaser.Math.Easing.Linear
-                            })
-                        },
-                        onComplete: () => {
-                            this.inMove = false;
-                            this.swapTiles(tile, freeNeighbor, direction);
-                            resolve(1);
-                        }
-                    });   
+                        callbackTrajectory: (value: number) => Object.assign({ x: value })
+                    }
                 } else {
-                    this.scene.tweens.addCounter({
+                    result_coord = {
                         from: tile.pos.y,
                         to: freeNeighbor.pos.y,
-                        duration: 200,
-                        ease: Phaser.Math.Easing.Expo.InOut,
-                        onUpdate: (tween: any, target: any) => {
-                            this.inMove = true;
-                            scene.add.tween({
-                                targets: tile.gameObject,
-                                y: target.value,
-                                duration: 1,
-                                ease: Phaser.Math.Easing.Linear
-                            })
-                        },
-                        onComplete: () => {
-                            this.inMove = false;
-                            this.swapTiles(tile, freeNeighbor, direction);
-                            resolve(1);
-                        }
-                    });  
+                        callbackTrajectory: (value: number) => Object.assign({ y: value })
+                    }
                 }
+                this.scene.tweens.addCounter({
+                    from: result_coord.from,
+                    to: result_coord.to,
+                    duration: 200,
+                    ease: Phaser.Math.Easing.Expo.InOut,
+                    onUpdate: (tween: any, target: any) => {
+                        this.inMove = true;
+                        console.log(result_coord.callbackTrajectory(target.value))
+                        scene.add.tween({
+                            ...result_coord.callbackTrajectory(target.value),
+                            targets: tile.gameObject,
+                            duration: 1,
+                            ease: Phaser.Math.Easing.Linear
+                        });
+                    },
+                    onComplete: () => {
+                        this.inMove = false;
+                        this.swapTiles(tile, freeNeighbor, direction);
+                        resolve(1);
+                    }
+                });
             }
             
         })
