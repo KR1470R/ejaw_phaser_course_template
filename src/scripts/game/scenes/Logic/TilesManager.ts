@@ -80,52 +80,48 @@ export default class TilesManager extends Phaser.GameObjects.Group {
 
             for (const tile of tiles) {
                 const freeNeighbors: Tile[] = this.getAllFreeNeighbors(tile, direction);
-                if (!freeNeighbors.length) {
-                    resolve(0);
-                    continue;
-                }
+                if (!freeNeighbors.length) continue;
 
                 const freeNeighbor = freeNeighbors[freeNeighbors.length - 1];
                 const scene = this.scene;
                 let result_coord: {
                     from: number;
                     to: number;
-                    callbackTrajectory: (value: number) => { value: number };
+                    callbackTrajectory: (value: number) => { x: number, y: number };
                 };
                 if (tile.posMap.row === freeNeighbor.posMap.row) {
                     result_coord = {
                         from: tile.pos.x,
                         to: freeNeighbor.pos.x,
-                        callbackTrajectory: (value: number) => Object.assign({ x: value })
+                        callbackTrajectory: (value: number) => Object.assign({ x: value, y: 0 })
                     }
                 } else {
                     result_coord = {
                         from: tile.pos.y,
                         to: freeNeighbor.pos.y,
-                        callbackTrajectory: (value: number) => Object.assign({ y: value })
+                        callbackTrajectory: (value: number) => Object.assign({ y: value, x: 0 })
                     }
                 }
-                this.scene.tweens.addCounter({
-                    from: result_coord.from,
-                    to: result_coord.to,
-                    duration: 200,
-                    ease: Phaser.Math.Easing.Expo.InOut,
-                    onUpdate: (tween: any, target: any) => {
-                        this.inMove = true;
-                        console.log(result_coord.callbackTrajectory(target.value))
-                        scene.add.tween({
-                            ...result_coord.callbackTrajectory(target.value),
-                            targets: tile.gameObject,
-                            duration: 1,
-                            ease: Phaser.Math.Easing.Linear
+                this.swapTiles(tile, freeNeighbor, direction)
+                    .then(() => {
+                        this.scene.tweens.addCounter({
+                            from: result_coord.from,
+                            to: result_coord.to,
+                            duration: 100,
+                            ease: Phaser.Math.Easing.Expo.InOut,
+                            onUpdate: (tween: any, target: any) => {
+                                this.inMove = true;
+                                const axis = result_coord.callbackTrajectory(target.value);
+                                if (axis.x ) (tile.gameObject as Phaser.GameObjects.Sprite).x = axis.x;
+                                else (tile.gameObject as Phaser.GameObjects.Sprite).y = axis.y;
+                            },
+                            onComplete: async () => {
+                                this.inMove = false;
+                                this.moveTillTheEnd(direction);
+                            }
                         });
-                    },
-                    onComplete: () => {
-                        this.inMove = false;
-                        this.swapTiles(tile, freeNeighbor, direction);
-                        resolve(1);
-                    }
-                });
+                    })
+                    .catch(err => new Error(err));
             }
             
         })
@@ -140,16 +136,15 @@ export default class TilesManager extends Phaser.GameObjects.Group {
         shuffleArray(rows);
 
         const iterateEachRow = () => {
-            if (!rows.length) return 
+            if (!rows.length) return;
             for (const row of rows) {
                 let column = this.tiles_grid.get(row);
                 if (column) {
                     shuffleArray(column);
 
                     const isFreeTile = (column as Tile[]).filter(tile => tile.key === -1)[0];
-                    if (isFreeTile) {
-                        return isFreeTile.posMap;
-                    } else {
+                    if (isFreeTile) return isFreeTile.posMap;
+                    else {
                         rows = removeItemAll(rows, row);
                         return iterateEachRow();
                     }
@@ -181,13 +176,13 @@ export default class TilesManager extends Phaser.GameObjects.Group {
                 neighborPos = {
                     column: tilePosMap.column + 1,
                     row: tilePosMap.row,
-                }
+                };
                 return neighborPos;
             case "left":
                 neighborPos = {
                     column: tilePosMap.column - 1,
                     row: tilePosMap.row,
-                }
+                };
                 return neighborPos;
             case "up":
                 neighborPos = {
@@ -199,7 +194,7 @@ export default class TilesManager extends Phaser.GameObjects.Group {
                 neighborPos = {
                     column: tilePosMap.column,
                     row: tilePosMap.row + 1,
-                }
+                };
                 return neighborPos;
             default:
                 throw new Error("Uknown direction!");
@@ -240,45 +235,48 @@ export default class TilesManager extends Phaser.GameObjects.Group {
     }
 
     private swapTiles(tile_old: Tile, tile_new: Tile, direction: Direction) {
-        const orientation = this.defineOrientation(direction);
+        return new Promise((resolve, reject) => {
+            const orientation = this.defineOrientation(direction);
 
-        const tile_old_temp = {
-            id: tile_old.id,
-            pos: tile_new.pos,
-            posMap: tile_new.posMap,
-            key: tile_old.key,
-            gameObject: tile_old.gameObject
-        }
-        const tile_new_temp = {
-            id: tile_new.id,
-            pos: tile_old.pos,
-            posMap: tile_old.posMap,
-            key: tile_new.key,
-            gameObject: tile_new.gameObject
-        }
-
-        switch (orientation) {
-            case "horizontal":
-                const column = (this.tiles_grid.get(tile_old.posMap.row) as Tile[]);
-
-                column[column.indexOf(tile_old)] = tile_old_temp;
-                column[column.indexOf(tile_new)] = tile_new_temp;
-        
-                this.tiles_grid.set(tile_old.posMap.row, column);
-                break;
-            case "vertical":
-                const column_old = (this.tiles_grid.get(tile_old.posMap.row) as Tile[]);
-                const column_new = (this.tiles_grid.get(tile_new.posMap.row) as Tile[]);
-
-                column_old[column_old.indexOf(tile_old)] = tile_new_temp;
-                column_new[column_new.indexOf(tile_new)] = tile_old_temp;
-
-                this.tiles_grid.set(tile_old.posMap.row, column_old);
-                this.tiles_grid.set(tile_new.posMap.row, column_new);
-                break;
-            default:
-                throw new Error("Uknown orientation!");
-        }
+            const tile_old_temp = {
+                id: tile_old.id,
+                pos: tile_new.pos,
+                posMap: tile_new.posMap,
+                key: tile_old.key,
+                gameObject: tile_old.gameObject
+            }
+            const tile_new_temp = {
+                id: tile_new.id,
+                pos: tile_old.pos,
+                posMap: tile_old.posMap,
+                key: tile_new.key,
+                gameObject: tile_new.gameObject
+            }
+    
+            switch (orientation) {
+                case "horizontal":
+                    const column = (this.tiles_grid.get(tile_old.posMap.row) as Tile[]);
+    
+                    column[column.indexOf(tile_old)] = tile_old_temp;
+                    column[column.indexOf(tile_new)] = tile_new_temp;
+            
+                    this.tiles_grid.set(tile_old.posMap.row, column);
+                    break;
+                case "vertical":
+                    const column_old = (this.tiles_grid.get(tile_old.posMap.row) as Tile[]);
+                    const column_new = (this.tiles_grid.get(tile_new.posMap.row) as Tile[]);
+    
+                    column_old[column_old.indexOf(tile_old)] = tile_new_temp;
+                    column_new[column_new.indexOf(tile_new)] = tile_old_temp;
+    
+                    this.tiles_grid.set(tile_old.posMap.row, column_old);
+                    this.tiles_grid.set(tile_new.posMap.row, column_new);
+                    break;
+                default:
+                    reject(new Error("Uknown orientation!"));
+            }
+            this.scene.time.delayedCall(10, () => resolve(1));
+        })
     }
 
     private defineOrientation(direction: Direction) {
@@ -300,11 +298,8 @@ export default class TilesManager extends Phaser.GameObjects.Group {
                 last_neighbor = temp;
                 getAllFreeNeighbors.push(temp);
                 return get_neighbor();
-            } else {
-                return getAllFreeNeighbors;
-            }
+            } else return getAllFreeNeighbors;
         }
         return get_neighbor();
     }
-
 }

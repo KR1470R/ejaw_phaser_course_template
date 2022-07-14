@@ -55,8 +55,6 @@ export default class Boot extends Phaser.Scene {
             const folder = `assets/${type}/${key}`;
             const path = `${folder}/${frame}`;
 
-            console.log(path)
-
             if (type === "image") {
                 this.load[type](`${key}-${frame}`, `${path}.png`);
             }
@@ -66,7 +64,6 @@ export default class Boot extends Phaser.Scene {
             }
 
             if (type === "spritesheet") {
-                console.log(path)
                 this.load[type](
                     "sprite-tile", 
                     `${path}.png`, 
