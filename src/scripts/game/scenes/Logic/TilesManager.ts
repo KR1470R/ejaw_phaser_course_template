@@ -80,7 +80,10 @@ export default class TilesManager extends Phaser.GameObjects.Group {
 
             for (const tile of tiles) {
                 const freeNeighbors: Tile[] = this.getAllFreeNeighbors(tile, direction);
-                if (!freeNeighbors.length) continue;
+                if (!freeNeighbors.length) {
+                    /* HERE IS LOGIC FOR TILE MERGES */
+                    continue;
+                };
 
                 const freeNeighbor = freeNeighbors[freeNeighbors.length - 1];
                 const scene = this.scene;
@@ -108,7 +111,7 @@ export default class TilesManager extends Phaser.GameObjects.Group {
                             from: result_coord.from,
                             to: result_coord.to,
                             duration: 100,
-                            ease: Phaser.Math.Easing.Expo.InOut,
+                            ease: Phaser.Math.Easing.Linear,
                             onUpdate: (tween: any, target: any) => {
                                 this.inMove = true;
                                 const axis = result_coord.callbackTrajectory(target.value);
