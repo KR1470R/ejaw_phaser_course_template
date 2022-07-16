@@ -1,6 +1,8 @@
 import {
     Direction, grid_size,
-    Tile, TilePositionMap
+    Tile, TilePositionMap,
+    AnimationCoordinats,
+    defineOrientation
 } from "scripts/util/globals";
 import { removeItemAll, shuffleArray } from "../../../util/extra";
 import TileConstructor from "./TileConstructor";
@@ -10,7 +12,7 @@ export default class TilesManager extends Phaser.GameObjects.Group {
     private tiles_grid: Map<number, Tile[]> = new Map();
     private gridContainer?: Phaser.GameObjects.Container;
     private tileConstructor!: TileConstructor;
-    public inMove: boolean = false;
+    // public inMove: boolean = false;
 
     constructor(scene: Phaser.Scene) {
         super(scene);
@@ -41,13 +43,10 @@ export default class TilesManager extends Phaser.GameObjects.Group {
             this.tiles_grid.set(row, column_tiles);
         }
 
-        for (let i = 1; i <= 4; i++) {
+        for (let i = 1; i <= 10; i++) {
             const newTile = this.tileConstructor.create(this.getFreeRandomSpaceMap())?.gameObject;
-            if (newTile) {
-                gridContainer.add(newTile);
-            } else {
-                console.log("COULDN'T FIND NEW SPACE TILE!");
-            }
+            if (newTile) gridContainer.add(newTile);
+            else console.log("COULDN'T FIND NEW SPACE TILE!");
         } 
     }
 
@@ -70,8 +69,8 @@ export default class TilesManager extends Phaser.GameObjects.Group {
     private moveTillTheEnd(
         direction: Direction
     ) {
-        if (this.inMove) return;
-        return new Promise(resolve => {
+        // if (this.inMove) return;
+        return new Promise(async (resolve, reject) => {
             const tiles = this.getAllBusyTiles();
             if (!tiles.length) {
                 resolve(0);
@@ -81,53 +80,47 @@ export default class TilesManager extends Phaser.GameObjects.Group {
             for (const tile of tiles) {
                 const freeNeighbors: Tile[] = this.getAllFreeNeighbors(tile, direction);
                 if (!freeNeighbors.length) {
-                    /* HERE IS LOGIC FOR TILE MERGES */
+                    await this.mergeIfItPossible(tile, direction);
                     continue;
                 };
-
                 const freeNeighbor = freeNeighbors[freeNeighbors.length - 1];
-                const scene = this.scene;
-                let result_coord: {
-                    from: number;
-                    to: number;
-                    callbackTrajectory: (value: number) => { x: number, y: number };
-                };
-                if (tile.posMap.row === freeNeighbor.posMap.row) {
-                    result_coord = {
-                        from: tile.pos.x,
-                        to: freeNeighbor.pos.x,
-                        callbackTrajectory: (value: number) => Object.assign({ x: value, y: 0 })
-                    }
-                } else {
-                    result_coord = {
-                        from: tile.pos.y,
-                        to: freeNeighbor.pos.y,
-                        callbackTrajectory: (value: number) => Object.assign({ y: value, x: 0 })
-                    }
-                }
-                this.swapTiles(tile, freeNeighbor, direction)
-                    .then(() => {
-                        this.scene.tweens.addCounter({
-                            from: result_coord.from,
-                            to: result_coord.to,
-                            duration: 100,
-                            ease: Phaser.Math.Easing.Linear,
-                            onUpdate: (tween: any, target: any) => {
-                                this.inMove = true;
-                                const axis = result_coord.callbackTrajectory(target.value);
-                                if (axis.x ) (tile.gameObject as Phaser.GameObjects.Sprite).x = axis.x;
-                                else (tile.gameObject as Phaser.GameObjects.Sprite).y = axis.y;
-                            },
-                            onComplete: async () => {
-                                this.inMove = false;
-                                this.moveTillTheEnd(direction);
-                            }
-                        });
-                    })
-                    .catch(err => new Error(err));
+                const result_coord = this.defineAnimationCoordinats(tile, freeNeighbor);
+
+                await this.swapTiles(tile, freeNeighbor, direction);
+
+                this.moveToSpecificTile(
+                    tile, 
+                    result_coord,
+                    () => {}
+                );
+                return this.moveTillTheEnd(direction);
             }
-            
         })
+    }
+
+    private moveToSpecificTile(
+        tile: Tile,
+        animationCoordinats: AnimationCoordinats,
+        callback: (...any) => void
+    ) {
+        return new Promise(resolve => {
+            this.scene.tweens.addCounter({
+                from: animationCoordinats.from,
+                to: animationCoordinats.to,
+                duration: 50,
+                ease: Phaser.Math.Easing.Linear,
+                onUpdate: (tween: any, target: any) => {
+                    // this.inMove = true;
+                    const axis = animationCoordinats.callbackTrajectory(target.value);
+                    if (axis.x ) (tile.gameObject as Phaser.GameObjects.Sprite).x = axis.x;
+                    else (tile.gameObject as Phaser.GameObjects.Sprite).y = axis.y;
+                },
+                onComplete: async () => {
+                    // this.inMove = false;
+                    resolve(callback());
+                }
+            });
+        }) 
     }
 
     private getFreeRandomSpaceMap(): TilePositionMap | undefined {
@@ -239,7 +232,7 @@ export default class TilesManager extends Phaser.GameObjects.Group {
 
     private swapTiles(tile_old: Tile, tile_new: Tile, direction: Direction) {
         return new Promise((resolve, reject) => {
-            const orientation = this.defineOrientation(direction);
+            const orientation = defineOrientation(direction);
 
             const tile_old_temp = {
                 id: tile_old.id,
@@ -255,7 +248,7 @@ export default class TilesManager extends Phaser.GameObjects.Group {
                 key: tile_new.key,
                 gameObject: tile_new.gameObject
             }
-    
+
             switch (orientation) {
                 case "horizontal":
                     const column = (this.tiles_grid.get(tile_old.posMap.row) as Tile[]);
@@ -282,11 +275,6 @@ export default class TilesManager extends Phaser.GameObjects.Group {
         })
     }
 
-    private defineOrientation(direction: Direction) {
-        if (direction === "right" || direction === "left") return "horizontal";
-        else return "vertical";
-    }
-
     private getAllFreeNeighbors(tile: Tile, direction: Direction) {
         const getAllFreeNeighbors: Tile[] = [];
         let last_neighbor: Tile | undefined;
@@ -304,5 +292,76 @@ export default class TilesManager extends Phaser.GameObjects.Group {
             } else return getAllFreeNeighbors;
         }
         return get_neighbor();
+    }
+
+    private canMerge(tile: Tile, direction: Direction) {
+        const neigborTile = this.getNeighbor(tile, direction, "busy");
+        if (neigborTile && neigborTile.key === tile.key) return neigborTile;   
+        else return false;
+    }
+
+    private mergeIfItPossible(tile: Tile, direction: Direction) {
+        return new Promise(resolve => {
+
+            const neigborMerge = this.canMerge(tile, direction);
+
+            if (neigborMerge) {
+                this.tileConstructor.removeTile(tile, this.gridContainer!)
+                    .then(() => {
+                        const newKey = tile.key + 1;
+                        neigborMerge.key = newKey;
+                        this.mergeAnimation(neigborMerge, newKey);
+                        resolve(neigborMerge);
+                    });
+            } else {
+                resolve(false);
+                return;
+            };
+        });
+    }
+
+    private mergeAnimation(tile: Tile, newKey: number) {
+        return new Promise(resolve => {
+            const tileObject = tile.gameObject as Phaser.GameObjects.Sprite;
+
+            this.scene.tweens.addCounter({
+                from: tileObject.scale * 100, // 60
+                to: 80,
+                duration: 100,
+                ease: Phaser.Math.Easing.Bounce.In,
+                onUpdate: (tween: any, target: any) => {
+                    tileObject.setScale(target.value / 100);
+                },
+                onComplete: () => {
+                    tileObject.setFrame(newKey);
+                    this.scene.tweens.addCounter({
+                        from: tileObject.scale * 100, // 80
+                        to: 60,
+                        duration: 100,
+                        ease: Phaser.Math.Easing.Bounce.Out,
+                        onUpdate: (tween: any, target: any) => {
+                            tileObject.setScale(target.value / 100);
+                        },
+                        onComplete: () => resolve(1)
+                    });
+                }
+            });
+        });
+    }
+
+    private defineAnimationCoordinats(fromTile: Tile, toTile: Tile): AnimationCoordinats {
+        if (fromTile.posMap.row === toTile.posMap.row) {
+            return {
+                from: fromTile.pos.x,
+                to: toTile.pos.x,
+                callbackTrajectory: (value: number) => Object.assign({ x: value, y: 0 })
+            };
+        } else {
+            return {
+                from: fromTile.pos.y,
+                to: toTile.pos.y,
+                callbackTrajectory: (value: number) => Object.assign({ y: value, x: 0 })
+            };
+        }
     }
 }

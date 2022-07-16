@@ -1,7 +1,14 @@
 import {
-    Tile, TilePositionMap, TilePosition
+    Tile, 
+    TilePositionMap, 
+    TilePosition,
 } from "scripts/util/globals";
-import { BetweenUnique, removeItemAll, shuffleArray } from "../../../util/extra";
+import { 
+    BetweenUnique, 
+    removeItemOnce, 
+    shuffleArray, 
+    getRandomInt 
+} from "../../../util/extra";
 export default class TileConstructor {
     
     private scene!: Phaser.Scene;
@@ -25,6 +32,7 @@ export default class TileConstructor {
             "sprite-tile",
             key
         )
+            .setDepth(2)
             .setScale(0.6)
             .setOrigin(0.5);
 
@@ -36,12 +44,18 @@ export default class TileConstructor {
         return freeTile;
     }
 
-    public createEmpty(pos: TilePosition, posMap: TilePositionMap): Tile {
+    public createEmpty(
+        pos: TilePosition, 
+        posMap: TilePositionMap,
+        visible = true
+    ): Tile {
         const emptyTile = this.scene.add.image(
                 pos.x,
                 pos.y,
                 "ui-emptytile"
             )
+                .setVisible(visible)
+                .setDepth(1)
                 .setScale(0.6)
                 .setOrigin(0.5);
 
@@ -63,5 +77,26 @@ export default class TileConstructor {
     public isTileNotEmpty(tile: Tile) {
         if (tile.key >= 0) return true;
         else return false;
+    }
+
+    public removeTile(tile: Tile, gridContainer?: Phaser.GameObjects.Container) {
+        return new Promise(resolve => {
+            const column = this.tiles_grid.get(tile.posMap.row);
+    
+            if (column && column.indexOf(tile) !== -1) {
+                const emptyTile = this.createEmpty(tile.pos, tile.posMap, false);
+    
+                column[column.indexOf(tile)] = emptyTile;
+    
+                this.tiles_grid.set(tile.posMap.row, column);
+                tile.gameObject.destroy();
+                gridContainer!.update();
+                resolve(true);
+                return;
+            } else {
+                resolve(0);
+                return;
+            }
+        })
     }
 }

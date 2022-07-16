@@ -25,37 +25,35 @@ export const base_text_style = {
 
 export const grid_size = 4;
 
-export const tileKeys: object = {
-    0: 2,
-    1: 4,
-    2: 8,
-    3: 16,
-    4: 32,
-    5: 64,
-    6: 128,
-    7: 256,
-    8: 512,
-    9: 1024,
-    10: 2048,
-    11: 4096
-}
-
 export type TilePosition = {
     x: number;
     y: number;
-}
+};
 
 export type TilePositionMap = {
     row: number;
     column: number;
-}
+};
 
 export type Tile = {
     id: number;
     pos: TilePosition;
     posMap: TilePositionMap;
-    key: number; // 0 - empty tile, 4, 8, 16...
-    gameObject: Phaser.GameObjects.GameObject,
-}
+    key: number; // -1 - empty tile, 1 - 2, 2 - 4, 3 - 16...
+    gameObject: Phaser.GameObjects.Image | Phaser.GameObjects.Sprite,
+};
 
 export type Direction = "right" | "left" | "up" | "down";
+
+export type Orientation = "horizontal" | "vertical";
+
+export type AnimationCoordinats = {
+    from: number;
+    to: number;
+    callbackTrajectory: (value: number) => { x: number, y: number };
+};
+
+export const defineOrientation = (direction: Direction): Orientation => {
+    if (direction === "right" || direction === "left") return "horizontal";
+    else return "vertical";
+};
