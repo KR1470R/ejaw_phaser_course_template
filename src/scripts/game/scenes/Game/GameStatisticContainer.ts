@@ -18,8 +18,10 @@ export default class GameStatisticContainer extends Phaser.GameObjects.Container
     }
 
     public create() {
-        this.createCurrentScoreContainer();
-        this.createBestScoreContainer();
+        return {
+            scoreLabel: this.createCurrentScoreContainer(),
+            bestScoreLabel: this.createBestScoreContainer(),
+        };
     }
 
     public createCurrentScoreContainer() {
@@ -67,6 +69,8 @@ export default class GameStatisticContainer extends Phaser.GameObjects.Container
         ]);
 
         this.add(this.currentScoreContainer);
+
+        return scoreText;
     }
 
     public createBestScoreContainer() {
@@ -96,7 +100,7 @@ export default class GameStatisticContainer extends Phaser.GameObjects.Container
             }
         ).setOrigin(0.5);
 
-        const scoreText = this.scene.add.text(
+        const bestScoreText = this.scene.add.text(
             0,
             titleContainer.y + 30,
             best_score.toString(),
@@ -110,9 +114,11 @@ export default class GameStatisticContainer extends Phaser.GameObjects.Container
         this.currentScoreContainer.add([
             backgroundContainer,
             titleContainer,
-            scoreText
+            bestScoreText
         ]);
 
         this.add(this.currentScoreContainer);
+
+        return bestScoreText;
     }
 }

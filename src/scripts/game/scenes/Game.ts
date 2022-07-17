@@ -5,12 +5,14 @@ import {
 } from "scripts/util/globals";
 import GameFieldContainer from "./Game/GameFIeldContainer";
 import GameStatisticContainer from "./Game/GameStatisticContainer";
+import { ScoreController } from "./Logic/ScoreController";
 import TilesManager from "./Logic/TilesManager";
 
 export default class Game extends Phaser.Scene {
     private statisticContainer!: GameStatisticContainer;
     private gameFieldContainer!: GameFieldContainer;
     private tilesManager!: TilesManager;
+    private scoreController!: ScoreController;
     private keyUp!: Phaser.Input.Keyboard.Key; 
     private keyDown!: Phaser.Input.Keyboard.Key;
     private keyLeft!: Phaser.Input.Keyboard.Key;
@@ -24,6 +26,12 @@ export default class Game extends Phaser.Scene {
         this.statisticContainer = new GameStatisticContainer(this);
         this.gameFieldContainer = new GameFieldContainer(this);
         this.tilesManager = new TilesManager(this);
+        const allScoresLabels = this.statisticContainer.create();
+        this.scoreController = new ScoreController(
+            allScoresLabels.scoreLabel, 
+            allScoresLabels.bestScoreLabel
+        );
+
         this.keyUp = this.scene.scene.input.keyboard.addKey("UP");        
         this.keyDown = this.scene.scene.input.keyboard.addKey("DOWN");
         this.keyLeft = this.scene.scene.input.keyboard.addKey("LEFT");
@@ -32,7 +40,7 @@ export default class Game extends Phaser.Scene {
 
     public create() {
         this.create_game_titles();
-        this.statisticContainer.create();
+        
         this.gameFieldContainer.create();
 
         this.tilesManager.generateBaseGrid(this.gameFieldContainer.container);
