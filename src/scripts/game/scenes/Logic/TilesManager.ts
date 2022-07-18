@@ -1,8 +1,8 @@
 import {
-    Direction, grid_size,
-    Tile, TilePositionMap,
     AnimationCoordinats,
-    defineOrientation
+    defineOrientation, Direction, grid_size,
+    Tile, TilePositionMap,
+    eventManager
 } from "scripts/util/globals";
 import { removeItemAll, shuffleArray } from "../../../util/extra";
 import TileConstructor from "./TileConstructor";
@@ -310,6 +310,7 @@ export default class TilesManager extends Phaser.GameObjects.Group {
                     .then(() => {
                         const newKey = tile.key + 1;
                         neigborMerge.key = newKey;
+                        eventManager.emit("add-current-score", newKey);
                         this.mergeAnimation(neigborMerge, newKey);
                         resolve(neigborMerge);
                     });

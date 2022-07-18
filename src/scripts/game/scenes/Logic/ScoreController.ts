@@ -1,3 +1,5 @@
+import { eventManager } from "scripts/util/globals";
+
 export class ScoreController {
     
     private currentScoreLabel!: Phaser.GameObjects.Text;
@@ -9,10 +11,17 @@ export class ScoreController {
     ) {
         this.currentScoreLabel = currentScoreLabel;
         this.bestScoreLabel = bestScoreLabel;
+
+        eventManager.on("add-current-score", (score: number | string) => {
+            const new_score = this.getCurrentScore() + Number(score);
+            this.setCurrentScore(new_score);
+            if (new_score > this.getBestScore())
+                this.setBestScore(new_score);
+        });
     }
 
-    public setCurrentScore(score: number) {
-        
+    public setCurrentScore(score: number | string) {
+        this.currentScoreLabel.text = score.toString();
     }
 
     public setBestScore(score: number | string) {
