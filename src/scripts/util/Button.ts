@@ -9,6 +9,7 @@ export default class Button {
     public height: number;
     public round: number;
     public element: Phaser.GameObjects.Rectangle;
+    public buttonContainer: Phaser.GameObjects.Container;
 
     private events: Map<string, Function>;
     private enabled: boolean;
@@ -82,6 +83,13 @@ export default class Button {
         if (!this.enabled) return;
         if (this.timeout) return;
 
+        this.buttonContainer!.setScale(0.9);
+        this.buttonContainer.setAlpha(0.6);
+        this.scene.time.delayedCall(100, () => {
+            this.buttonContainer!.setScale(1);
+            this.buttonContainer.setAlpha(1);
+        });
+
         document.body.style.cursor = "auto";
 
         this.timeout = true;
@@ -142,6 +150,8 @@ export default class Button {
             button_graphics,
             button_text
         ]);
+
+        this.buttonContainer = button_container;
 
         this.scene.add.existing(button_container);
 
