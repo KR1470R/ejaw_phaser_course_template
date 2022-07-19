@@ -1,8 +1,7 @@
 import {
     AnimationCoordinats,
-    defineOrientation, Direction, grid_size,
-    Tile, TilePositionMap,
-    eventManager
+    defineOrientation, Direction, eventManager, grid_size,
+    Tile, TilePositionMap
 } from "scripts/util/globals";
 import { removeItemAll, shuffleArray } from "../../../util/extra";
 import TileConstructor from "./TileConstructor";
@@ -47,7 +46,7 @@ export default class TilesManager extends Phaser.GameObjects.Group {
             this.tiles_grid.set(row, column_tiles);
         }
 
-        for (let i = 1; i <= 2; i++) {
+        for (let i = 1; i <= 15; i++) {
             this.createTileRandom();
         }
     }
@@ -413,31 +412,31 @@ export default class TilesManager extends Phaser.GameObjects.Group {
         }
     }
 
-    private isOver(busyTiles: Tile[]) {
-        if (this.getFreeRandomSpaceMap()) return false; 
-
-        const allDirection: Direction[] = [
-            "left", 
-            "right", 
-            "up", 
-            "down"
-        ];
-
-        const overOrNot = (busyTile: Tile) => {
-            let res = false;
-            for (const direction of allDirection) {
-                if (!this.canMerge(busyTile, direction)) 
-                    res = true;
-                
+    private isOver(busyTiles: Tile[]) { 
+        if (!this.getFreeRandomSpaceMap()) {
+            const allDirection: Direction[] = [
+                "left", 
+                "right", 
+                "up", 
+                "down"
+            ];
+    
+            const isCanMergeAnyDirection = (busyTile: Tile) => {
+                for (const direction of allDirection) {
+                    if (this.canMerge(busyTile, direction)) 
+                        return true;
+                }
+                return false;
             }
-            return res;
+    
+            for (const busyTile of busyTiles) {
+                const flag = isCanMergeAnyDirection(busyTile);
+                if (flag) return false;
+                else continue;
+            }
+    
+            return true;
         }
-
-        for (const busyTile of busyTiles) {
-            if (overOrNot(busyTile)) return true;
-            else continue;
-        }
-
         return false;
     }
 }
