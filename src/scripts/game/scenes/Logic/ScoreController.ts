@@ -12,6 +12,9 @@ export class ScoreController {
         this.currentScoreLabel = currentScoreLabel;
         this.bestScoreLabel = bestScoreLabel;
 
+        const saved_score = localStorage.getItem("best_score")
+        this.setBestScore(saved_score ? saved_score : 0);
+
         eventManager.on("add-current-score", (score: number | string) => {
             const new_score = this.getCurrentScore() + Number(score);
             this.setCurrentScore(new_score);
@@ -25,6 +28,7 @@ export class ScoreController {
     }
 
     public setBestScore(score: number | string) {
+        localStorage.setItem("best_score", String(score));
         this.bestScoreLabel.text = score.toString();
     }
 
