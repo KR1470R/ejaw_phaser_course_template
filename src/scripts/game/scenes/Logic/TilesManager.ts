@@ -46,7 +46,7 @@ export default class TilesManager extends Phaser.GameObjects.Group {
             this.tiles_grid.set(row, column_tiles);
         }
 
-        for (let i = 1; i <= 15; i++) {
+        for (let i = 1; i <= 2; i++) {
             this.createTileRandom();
         }
     }
@@ -113,6 +113,7 @@ export default class TilesManager extends Phaser.GameObjects.Group {
                     result_coord,
                     () => this.inMove = false
                 );
+
                 return this.moveTillTheEnd(direction);
             }
 
@@ -430,9 +431,10 @@ export default class TilesManager extends Phaser.GameObjects.Group {
             }
     
             for (const busyTile of busyTiles) {
-                const flag = isCanMergeAnyDirection(busyTile);
-                if (flag) return false;
-                else continue;
+                if (isCanMergeAnyDirection(busyTile)) 
+                    return false;
+                    
+                continue;
             }
     
             return true;
