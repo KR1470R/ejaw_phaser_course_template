@@ -35,4 +35,12 @@ export class ScoreController {
     public getBestScore() {
         return parseInt(this.bestScoreLabel.text);
     }
+
+    public resetCurrentScore() {
+        this.setCurrentScore(0);
+    }
+
+    public resetBestScore() {
+        this.setBestScore(0);
+    }
 }

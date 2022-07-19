@@ -36,6 +36,27 @@ export default class TileConstructor {
             .setScale(0.6)
             .setOrigin(0.5);
 
+        this.scene.tweens.addCounter({
+            from: sprite.scale * 100, // 60
+            to: 70,
+            duration: 100,
+            ease: Phaser.Math.Easing.Bounce.In,
+            onUpdate: (tween: any, target: any) => {
+                sprite.setScale(target.value / 100);
+            },
+            onComplete: () => {
+                this.scene.tweens.addCounter({
+                    from: sprite.scale * 100, // 80
+                    to: 60,
+                    duration: 100,
+                    ease: Phaser.Math.Easing.Bounce.Out,
+                    onUpdate: (tween: any, target: any) => {
+                        sprite.setScale(target.value / 100);
+                    }
+                });
+            }
+        });
+
         freeTile.key = key;
         freeTile.gameObject = sprite;
         freeTileColumn[freeTileColumn.indexOf(freeTile)] = freeTile;
