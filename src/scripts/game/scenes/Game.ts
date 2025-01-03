@@ -9,6 +9,7 @@ import WinContainer from "./Game/WinContainer";
 import GameOverContainer from "./Game/GameOverContainer";
 import { ScoreController } from "./Logic/ScoreController";
 import TilesManager from "./Logic/TilesManager";
+import Key = Phaser.Input.Keyboard.Key;
 
 export default class Game extends Phaser.Scene {
     private statisticContainer!: GameStatisticContainer;
@@ -17,7 +18,7 @@ export default class Game extends Phaser.Scene {
     private gameOverContainer!: GameOverContainer;
     private tilesManager!: TilesManager;
     private scoreController!: ScoreController;
-    private keyUp!: Phaser.Input.Keyboard.Key; 
+    private keyUp!: Phaser.Input.Keyboard.Key;
     private keyDown!: Phaser.Input.Keyboard.Key;
     private keyLeft!: Phaser.Input.Keyboard.Key;
     private keyRight!: Phaser.Input.Keyboard.Key;
@@ -35,14 +36,16 @@ export default class Game extends Phaser.Scene {
         this.tilesManager = new TilesManager(this);
         const allScoresLabels = this.statisticContainer.create();
         this.scoreController = new ScoreController(
-            allScoresLabels.scoreLabel, 
+            allScoresLabels.scoreLabel,
             allScoresLabels.bestScoreLabel
         );
 
-        this.keyUp = this.scene.scene.input.keyboard.addKey("UP");        
-        this.keyDown = this.scene.scene.input.keyboard.addKey("DOWN");
-        this.keyLeft = this.scene.scene.input.keyboard.addKey("LEFT");
-        this.keyRight = this.scene.scene.input.keyboard.addKey("RIGHT");
+        if (!this.scene.scene.input.keyboard) throw new Error('Invalid platform!');
+
+        this.keyUp = this.scene.scene.input.keyboard.addKey("UP");
+        this.keyDown = this.scene.scene.input.keyboard?.addKey("DOWN");
+        this.keyLeft = this.scene.scene.input.keyboard?.addKey("LEFT");
+        this.keyRight = this.scene.scene.input.keyboard?.addKey("RIGHT");
     }
 
     public create() {
@@ -117,7 +120,7 @@ export default class Game extends Phaser.Scene {
         await this.gameOverContainer.deleteGameOverContainer();
 
         this.bindAllKeys();
-        
+
         this.stop = false;
     }
 
@@ -149,7 +152,7 @@ export default class Game extends Phaser.Scene {
         const fpsText = this.add
             .bitmapText(100, 100, "Uni_Sans_Heavy")
             .setOrigin(0.5);
-            
+
         dataStorage.bitmaps["Uni_Sans_Heavy"].overrideBitmapText(
             fpsText
         );
